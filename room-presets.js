@@ -22,8 +22,7 @@ or implied.
  * 
  * This macro lets you easily create and switch between room presets
  * 
- * More information available here:
- * https://github.com/wxsd-sales/room-presets-macro
+ * 
  * 
  ********************************************************/
 import xapi from 'xapi';
@@ -33,54 +32,48 @@ import xapi from 'xapi';
 **********************************************************/
 
 const config = {
-  buttoName: 'Presentation Mode', // Name for button and page title
+  buttoName: 'Room Control', // Name for button and page title
   presets: [        // Create your array of presets
     {
       name: 'Local',          // Name for your preset
       displays: {
-        outputRoles: ['Off', 'Auto', 'PresentationOnly'], // Output roles array
-        monitorRole: 'Auto',    // The Video Monitor Role
-        osd: 2                  // THe Video Output which will show the OSD
+        outputRoles: ['Auto', 'Second', 'First'], // Output roles array
+        matrix: [true, false, false],   // true = black screen | false = normal 
+        monitorRole: 'DualPresentationOnly',  // The Video Monitor Role
+        layout: 'Grid',         // Grid | Overlay | Stack | Focus
+        osd: 2                  // The Video Output which will show the OSD
       },
       camera: {
-        defaultSource: 1,       // Quadcam = 1, PTZ = 2
+        defaultSource: 3,       // Quadcam = 1, PTZ = 2
         speakerTrack: 'Off'     // Auto | Off
       }
     },
     {
       name: 'Hybrid',
       displays: {
-        outputRoles: ['Auto', 'Auto', 'PresentationOnly'],
-        monitorRole: 'Auto',
+        outputRoles: ['First', 'Third', 'Second'],  //Auto, First, PresentationOnly, Recorder, Second, Third
+        matrix: [false, false, false],
+        monitorRole: 'TriplePresentationOnly', //Auto, Dual, DualPresentationOnly, Single, Triple, TriplePresentationOnly
+        layout: 'Stack',
         osd: 1
       },
       camera: {
-        defaultSource: 1,
+        defaultSource: 3,
         speakerTrack: 'Off'
       }
     },
     {
       name: 'Remote',
       displays: {
-        outputRoles: ['Auto', 'Auto', 'PresentationOnly'],
-        monitorRole: 'Auto',
+        outputRoles: ['First', 'Third', 'Second'],
+        matrix: [false, false, false],
+        monitorRole: 'TriplePresentationOnly',
+        layout: 'Stack',
         osd: 1
       },
       camera: {
         defaultSource: 1,
-        speakerTrack: 'Off'
-      }
-    },
-    {
-      name: 'Remote Option 2',
-      displays: {
-        outputRoles: ['Auto', 'Auto', 'PresentationOnly'],
-        monitorRole: 'Auto',
-        osd: 1
-      },
-      camera: {
-        defaultSource: 1,
-        speakerTrack: 'Off'
+        speakerTrack: 'Auto'
       }
     }
   ]
@@ -90,11 +83,40 @@ const config = {
  * Main function to setup and add event listeners
 **********************************************************/
 
+let currentLayout;
+
+function main(){
+  createPanel()
+  xapi.Event.UserInterface.Extensions.Widget.Action.on(processWidget);
+  xapi.Status.Video.Layout.CurrentLayouts.AvailableLayouts.on(processLayouts)
+}
+
+setTimeout(main, 1000)
+
+
+
+function processLayouts(layout){
+  if(layout.ghost) return;
+  // console.log('Layout Availablity Change');
+  // console.log(`Current layout should be [${currentLayout}] available layout is: [${layout.LayoutName}]`);
+  if (currentLayout == layout.LayoutName) {
+    setLayout(currentLayout)
+  }
+}
+
+
+
 function setCamera(camera) {
-  console.log(`Setting SpeakerTrack to: ${camera.speakerTrack}`);
-  xapi.Config.Cameras.SpeakerTrack.Mode.set(camera.speakerTrack);
   console.log('Setting Main Video Source to: ' + camera.defaultSource);
-  xapi.Command.Video.Input.SetMainVideoSource({ ConnectorId: camera.defaultSource });
+  xapi.Command.Video.Input.SetMainVideoSource({ ConnectorId: camera.defaultSource })
+  .then(r=>{
+    console.log(`Setting SpeakerTrack to: ${camera.speakerTrack}`);
+    xapi.Config.Cameras.SpeakerTrack.Mode.set(camera.speakerTrack)
+    .catch(e=> console.error('Error setting speaker track: ' + e.message))
+  })
+  .catch(e=> console.error('Error setting Main video source: ' + e.message))
+  
+  
 }
 
 function setOSD(id) {
@@ -112,14 +134,21 @@ function setOutputRoles(roles) {
   roles.forEach((role, index) => {
     const id = index + 1;
     console.log(`Setting Video Output [${id}] Role to: ${role}`)
-    if (role == 'Off') {
-      xapi.Command.Video.Matrix.Assign({ Output: id })
-        .catch(e => `Could not Assign Matrix to [${id}]: ${e.message}`)
+    xapi.Config.Video.Output.Connector[id].MonitorRole.set(role)
+        .catch(e => console.error(`Could not set Output [${id}] to ${role}: ${e.message}`))
+  })
+}
+
+function setMatrix(displays) {
+  displays.forEach((state, index) => {
+    const id = index + 1;
+    console.log(`Setting Video Matrix Output [${id}] to: ${state ? 'On' : 'Off'}`)
+    if(state){
+    xapi.Command.Video.Matrix.Assign({ Output: id })
+        .catch(e => console.error(`Could not Assign Matrix to [${id}]: ${e.message}`))
     } else {
-      xapi.Command.Video.Matrix.Reset({ Output: id })
-        .catch(e => `Could not Reset Matrix to [${id}]: ${e.message}`)
-      xapi.Config.Video.Output.Connector[id].MonitorRole.set(role)
-        .catch(e => `Could not set Output [${id}] to ${role}: ${e.message}`)
+       xapi.Command.Video.Matrix.Reset({ Output: id })
+        .catch(e => console.error(`Could not Reset Matrix to [${id}]: ${e.message}`))
     }
   })
 }
@@ -134,6 +163,7 @@ function setWidgetActive(id) {
 // Identify the currect state of the device and which 
 // configured preset matches and update the UI accordingly 
 async function identifyState() {
+  console.log('Syncing UI')
   const outputs = await xapi.Config.Video.Output.Connector.get()
 
   const displays = {
@@ -156,17 +186,40 @@ async function identifyState() {
   })
 }
 
+async function setLayout(newLayout){
+  console.log(`Attempting to set layout to: [${newLayout}]`)
+  const current = await xapi.Status.Video.Layout.CurrentLayouts.ActiveLayout.get();
+  if(current == newLayout) {
+    console.log(`Layout [${newLayout}] is already set, ignoring`)
+    return;
+  }
+  const available = await xapi.Status.Video.Layout.CurrentLayouts.AvailableLayouts.get();
+  //console.log(available)
+  for(let i=0; i<available.length; i++) {
+    if(newLayout == available[i].LayoutName){
+      console.log(`Layout [${newLayout}] is available, applying change`)
+      xapi.Command.Video.Layout.SetLayout({ LayoutName: newLayout });
+      return;
+    }
+  }
+  console.log(`Layout ${newLayout} was not available to set`)
+}
+
 // Listen for clicks on the buttons
 function processWidget(event) {
   if (event.Type !== 'clicked' || !event.WidgetId.startsWith("display-preset")) return;
   const presetNum = parseInt(event.WidgetId.slice(-1))
   const preset = config.presets[presetNum];
   console.log(`Display Preset '${preset.name}' selected`)
+  console.log('Setting current layout to ' + preset.displays.layout);
+  currentLayout = preset.displays.layout
   setWidgetActive(presetNum)
   setOSD(preset.displays.osd);
   setMonitorRole(preset.displays.monitorRole);
+  setMatrix(preset.displays.matrix);
   setOutputRoles(preset.displays.outputRoles);
-  setCamera(preset.camera)
+  setCamera(preset.camera);
+  setLayout(currentLayout);
 }
 
 // Here we create the Button and Panel for the UI
@@ -187,7 +240,6 @@ async function createPanel() {
   })
   const panel = `
     <Extensions>
-      <Version>1.9</Version>
       <Panel>
         <Type>Statusbar</Type>
         <Location>HomeScreenAndCallControls</Location>
@@ -206,6 +258,3 @@ async function createPanel() {
     panel
   ).then(identifyState)
 }
-
-createPanel()
-xapi.Event.UserInterface.Extensions.Widget.Action.on(processWidget);
