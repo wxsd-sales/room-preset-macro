@@ -22,8 +22,9 @@ or implied.
  * 
  * This macro lets you easily create and switch between room presets
  * 
- * 
- * 
+ * More infomation here:
+ * https://github.com/wxsd-sales/room-presets-macro
+ *
  ********************************************************/
 import xapi from 'xapi';
 
@@ -45,7 +46,7 @@ const config = {
       },
       camera: {
         defaultSource: 3,       // Quadcam = 1, PTZ = 2
-        speakerTrack: 'Off'     // Auto | Off
+        speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
     {
@@ -59,7 +60,7 @@ const config = {
       },
       camera: {
         defaultSource: 3,
-        speakerTrack: 'Off'
+        speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
     {
@@ -73,7 +74,7 @@ const config = {
       },
       camera: {
         defaultSource: 1,
-        speakerTrack: 'Auto'
+        speakerTrackBackground: 'Activate'     // Activate | Deactivate
       }
     }
   ]
@@ -110,9 +111,18 @@ function setCamera(camera) {
   console.log('Setting Main Video Source to: ' + camera.defaultSource);
   xapi.Command.Video.Input.SetMainVideoSource({ ConnectorId: camera.defaultSource })
   .then(r=>{
-    console.log(`Setting SpeakerTrack to: ${camera.speakerTrack}`);
-    xapi.Config.Cameras.SpeakerTrack.Mode.set(camera.speakerTrack)
-    .catch(e=> console.error('Error setting speaker track: ' + e.message))
+    switch (camera.speakerTrackBackground) {
+      case 'Activate':
+      console.log(`Setting SpeakerTrack BackgroundMode to: [Activate]`);
+      xapi.Command.Cameras.SpeakerTrack.BackgroundMode.Activate()
+      .catch(e=> console.error('Error Activating SpeakerTrack BackgroundMode: ' + e.message))
+      break;
+      case 'Deactivate':
+      console.log(`Setting SpeakerTrack BackgroundMode to: [Deactivate]`);
+      xapi.Command.Cameras.SpeakerTrack.BackgroundMode.Deactivate()
+      .catch(e=> console.error('Error Deactivating SpeakerTrack BackgroundMode: ' + e.message))
+      break;
+    }
   })
   .catch(e=> console.error('Error setting Main video source: ' + e.message))
   
@@ -210,7 +220,7 @@ function processWidget(event) {
   if (event.Type !== 'clicked' || !event.WidgetId.startsWith("display-preset")) return;
   const presetNum = parseInt(event.WidgetId.slice(-1))
   const preset = config.presets[presetNum];
-  console.log(`Display Preset '${preset.name}' selected`)
+  console.log(`Display Preset '${preset.name}' selected`);
   console.log('Setting current layout to ' + preset.displays.layout);
   currentLayout = preset.displays.layout
   setWidgetActive(presetNum)
