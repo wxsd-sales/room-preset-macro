@@ -45,7 +45,7 @@ const config = {
         osd: 2                  // The Video Output which will show the OSD
       },
       camera: {
-        defaultSource: 3,       // Quadcam = 1, PTZ = 2
+        defaultSource: 2,       // Quadcam = 1, PTZ = 2
         speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
@@ -59,7 +59,7 @@ const config = {
         osd: 1
       },
       camera: {
-        defaultSource: 3,
+        defaultSource: 2,
         speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
