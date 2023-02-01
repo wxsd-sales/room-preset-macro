@@ -7,7 +7,7 @@ This Webex Device macro lets you easily create room presets for your Webex Room 
 
 Easily create a Preset and specify all your display roles, matix, layouts and camera settings etc.
 
-```yaml
+```js
 {
   name: 'Local',          // Name for your preset
   displays: {
@@ -31,7 +31,7 @@ Easily create a Preset and specify all your display roles, matix, layouts and ca
 
 ## Setup
 
-1. Download the ``room-control.js`` and upload it to your Webex Room devices Macro editor via the web interface.
+1. Download the ``room-preset.js`` file and upload it to your Webex Room device via Macro editor available on its web interface.
 2. Configure the Macro by changing the initial values, there are comments explaining each one.
 3. Enable the Macro on the editor.
 
@@ -40,7 +40,7 @@ Easily create a Preset and specify all your display roles, matix, layouts and ca
 Validated Hardware:
 
 * Room Kit Pro
-* Could work for roomkit plus but you will need to change the display output config from 3 - 2
+* Should work for Roomkit Plus but you will need to change the display output config from three to two.
 
 This macro should work on other Webex Devices but has not been validated at this time.
 
