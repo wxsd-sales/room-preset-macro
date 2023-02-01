@@ -17,14 +17,13 @@ or implied.
  *                    	wimills@cisco.com
  *                    	Cisco Systems
  * 
- * Version: 1-0-0
+ * Version: 1-0-1
  * Released: 01/10/23
  * 
  * This macro lets you easily create and switch between room presets
  * 
- * More infomation here:
- * https://github.com/wxsd-sales/room-presets-macro
- *
+ * 
+ * 
  ********************************************************/
 import xapi from 'xapi';
 
@@ -33,19 +32,19 @@ import xapi from 'xapi';
 **********************************************************/
 
 const config = {
-  buttoName: 'Room Control', // Name for button and page title
+  buttonName: 'Room Presets', // Name for button and page title
   presets: [        // Create your array of presets
     {
-      name: 'Local',          // Name for your preset
+      name: 'Local Presenter',          // Name for your preset
       displays: {
         outputRoles: ['Auto', 'Second', 'First'], // Output roles array
         matrix: [true, false, false],   // true = black screen | false = normal 
-        monitorRole: 'DualPresentationOnly',  // The Video Monitor Role
+        videoMonitors: 'DualPresentationOnly',  // More info here: https://roomos.cisco.com/xapi/Configuration.Video.Monitors
         layout: 'Grid',         // Grid | Overlay | Stack | Focus
         osd: 2                  // The Video Output which will show the OSD
       },
       camera: {
-        defaultSource: 2,       // Quadcam = 1, PTZ = 2
+        inputSource: 2,       // Quadcam = 1, PTZ = 2
         speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
@@ -54,26 +53,26 @@ const config = {
       displays: {
         outputRoles: ['First', 'Third', 'Second'],  //Auto, First, PresentationOnly, Recorder, Second, Third
         matrix: [false, false, false],
-        monitorRole: 'TriplePresentationOnly', //Auto, Dual, DualPresentationOnly, Single, Triple, TriplePresentationOnly
+        videoMonitors: 'TriplePresentationOnly', //Auto, Dual, DualPresentationOnly, Single, Triple, TriplePresentationOnly
         layout: 'Stack',
         osd: 1
       },
       camera: {
-        defaultSource: 2,
+        inputSource: 2,
         speakerTrackBackground: 'Deactivate'     // Activate | Deactivate
       }
     },
     {
-      name: 'Remote',
+      name: 'Remote Presenter',
       displays: {
         outputRoles: ['First', 'Third', 'Second'],
         matrix: [false, false, false],
-        monitorRole: 'TriplePresentationOnly',
+        videoMonitors: 'TriplePresentationOnly',
         layout: 'Stack',
         osd: 1
       },
       camera: {
-        defaultSource: 1,
+        inputSource: 1,
         speakerTrackBackground: 'Activate'     // Activate | Deactivate
       }
     }
@@ -108,8 +107,8 @@ function processLayouts(layout){
 
 
 function setCamera(camera) {
-  console.log('Setting Main Video Source to: ' + camera.defaultSource);
-  xapi.Command.Video.Input.SetMainVideoSource({ ConnectorId: camera.defaultSource })
+  console.log('Setting Main Video Source to: ' + camera.inputSource);
+  xapi.Command.Video.Input.SetMainVideoSource({ ConnectorId: camera.inputSource })
   .then(r=>{
     switch (camera.speakerTrackBackground) {
       case 'Activate':
@@ -134,7 +133,10 @@ function setOSD(id) {
   xapi.Config.UserInterface.OSD.Output.set(id);
 }
 
-function setMonitorRole(mode) {
+
+// Sets the Video Monitors for the devices:
+// https://roomos.cisco.com/xapi/Configuration.Video.Monitors
+function setVideoMonitors(mode) {
   console.log('Setting Monitors Role to: ' + mode)
   xapi.Config.Video.Monitors.set(mode)
     .catch(e => 'Failed to set Video Monitors Role: ' + e.message)
@@ -225,7 +227,7 @@ function processWidget(event) {
   currentLayout = preset.displays.layout
   setWidgetActive(presetNum)
   setOSD(preset.displays.osd);
-  setMonitorRole(preset.displays.monitorRole);
+  setVideoMonitors(preset.displays.videoMonitors);
   setMatrix(preset.displays.matrix);
   setOutputRoles(preset.displays.outputRoles);
   setCamera(preset.camera);
@@ -240,7 +242,7 @@ async function createPanel() {
       <Row>
         <Options>size=3</Options>
         <Widget>
-          <WidgetId>display-preset-${i}</WidgetId>
+          <WidgetId>room-presets-${i}</WidgetId>
           <Type>Button</Type>
           <Name>${preset.name}</Name>
           <Options>size=4</Options>
@@ -254,17 +256,17 @@ async function createPanel() {
         <Type>Statusbar</Type>
         <Location>HomeScreenAndCallControls</Location>
         <Icon>Tv</Icon>
-        <Name>${config.buttoName}</Name>
+        <Name>${config.buttonName}</Name>
         <ActivityType>Custom</ActivityType>
         <Page>
-          <Name>${config.buttoName}</Name>
+          <Name>${config.buttonName}</Name>
           ${presets}
           <Options>hideRowNames=1</Options>
         </Page>
       </Panel>
     </Extensions>`
   xapi.Command.UserInterface.Extensions.Panel.Save(
-    { PanelId: 'display-controls' },
+    { PanelId: 'room-presets' },
     panel
-  ).then(identifyState)
+  )
 }
