@@ -22,7 +22,8 @@ or implied.
  * 
  * This macro lets you easily create and switch between room presets
  * 
- * 
+ * More information available here:
+ * https://github.com/wxsd-sales/room-presets-macro
  * 
  ********************************************************/
 import xapi from 'xapi';
