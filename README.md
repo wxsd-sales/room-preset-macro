@@ -1,5 +1,7 @@
 # Room Presets Macro
 
+Welcome to our WXSD DEMO Repo! <!-- Keep this here --> 
+
 This Webex Device macro lets you easily create room presets for your Webex Room series. It auto generates the presets as a list of button within a UI extension panel.
 
 ![download (9)](https://user-images.githubusercontent.com/21026209/214661392-7156db8a-ccac-4a92-ae29-fc62d8f32a69.png)
@@ -24,6 +26,11 @@ Easily create a Preset and specify all your display roles, matix, layouts and ca
 }
 ```
 
+
+<!-- Keep the following here -->  
+ *_Everything included is for demo and Proof of Concept purposes only. Your use of the site is solely at your own risk. This site may contain links to third party content, which we do not warrant, endorse, or assume liability for. These demos are for Cisco Webex usecases, but are not Official Cisco Webex Branded demos._
+ 
+ 
 ## Requirements
 
 1. RoomOS/CE 11.2.x or above Webex Device.
